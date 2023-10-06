@@ -115,6 +115,110 @@ void setup()
   //  timeClient.setTimeOffset(25200);
 }
 
+void maptegangan() {
+
+  an1 = analogRead(NPKa);
+  int anx1 = map(an1, 0, 4095, 0, 1023);
+  Nx = map(anx1, 0, 1023, 350, 60);
+  Serial.print("AnalogA0 = ");
+  Serial.println(anx1);
+  Serial.print(" ");
+  if (Nx < 0) {
+    Nx = 0;
+  } else if (Nx > 900)
+    Nx = 900;
+  else {
+    Nx = Nx;
+  }
+  String message11 = "N : " + (String)Nx + " PPM  ";
+  String message1 = "    SOIL NPK     ";
+  //==========
+
+  //  an2 = analogRead(NPKa);
+  ////  vaql2 = map(an2, 0, 1023, 0, 1023);
+  //  float Pxx = map(an2, 0, 1023, 10000, 100);
+  //  Px= (Pxx/100);
+  //  Serial.print("AnalogA0 = ");
+  //  Serial.println(an2);
+  //  Serial.print(" ");
+  //  if (Px <1) {
+  //  Px = 1;
+  //  }
+  //  else if( Px > 100)
+  //  Px = 100;
+  //  else {
+  //  Px = Px;
+  //  }
+
+
+  an2 = analogRead(NPKa);
+  //  vaql2 = map(an2, 0, 1023, 0, 1023);
+  int anx2 = map(an2, 0, 4095, 0, 1023);
+  Px = map(anx2, 100, 1023, 32, 5);
+  //  Px= (Pxx/100);
+  Serial.print("AnalogA0 = ");
+  Serial.println(anx2);
+  Serial.print(" ");
+  if (Px < 0) {
+    Px = 0;
+  } else if (Px > 100)
+    Px = 100;
+  else {
+    Px = Px;
+  }
+  String message21 = "P : " + (String)Px + " PPM ";
+  String message2 = "    SOIL NPK     ";
+
+  ////==========
+
+  an3 = analogRead(NPKa);
+  //  vaql3 = map(an3, 0, 1023, 0, 1023);
+  int anx3 = map(an3, 0, 4095, 0, 1023);
+  Kx = map(anx3, 30, 1023, 210, 70);
+  Serial.print("AnalogA0 = ");
+  Serial.println(an3);
+  Serial.print(" ");
+  if (Kx < 0) {
+    Kx = 0;
+  } else if (Kx > 700)
+    Kx = 700;
+  else {
+    Kx = Kx;
+  }
+  String message31 = "K : " + (String)Kx + " PPM ";
+  String message3 = "    SOIL NPK     ";
+}
+
+void sensorMoist() {
+  //    float nilaiMo;
+  int hasilPembacaan = analogRead(NPKa);
+  int anxm = map(hasilPembacaan, 0, 4095, 0, 1023);
+  nilaiMo = map(anxm, 0, 1023, 100, 20);
+  //    nilaiMo = (100-((hasilPembacaan/1023)*100));
+
+  Serial.print("Persentase Kelembaban Tanah = ");
+  Serial.print(nilaiMo);
+  Serial.println("%");
+  delay(2000);
+}
+
+void sensorpH() {
+  float anpH = analogRead(NPKa);
+  int anxpH = map(anpH, 0, 4095, 0, 1023);
+  float anpH1 = map(anxpH, 0, 950, 10, 35);
+  nilaipH = (-0.0693 * anpH1) + 7.3855;
+  if (nilaipH < 1) {
+    nilaipH = 1;
+  } else if (nilaipH > 14)
+    nilaipH = 14;
+  else {
+    nilaipH = nilaipH;
+  }
+  Serial.print(" PH = ");
+  Serial.println(nilaipH);
+  delay(2000);
+}
+
 void loop()
 {
   char c = GPS.read();
