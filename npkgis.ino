@@ -3,56 +3,47 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-// #include <AntaresESP32HTTP.h>
-// #include <LiquidCrystal_I2C.h>
-//===
-
 // #include <NTPClient.h>
 #include <WiFiUdp.h>
 #include <FirebaseESP32.h>
 
 #define WIFI_SSID "0610"
 #define WIFI_PASSWORD "masuk123"
-// test1
+
 #define DATABASE_URL "https://agrisoil-dev-default-rtdb.asia-southeast1.firebasedatabase.app/"
 #define DATABASE_SECRET "zJRSwvyUtt8xYDklM4mBm3pBbPLZXp2YsVj4KMbC"
 
-HardwareSerial GPSSerial(2); // Use Serial2 for ESP32 (GPIO16 - RX2, GPIO17 - TX2)
+#define NPKa 35
 
+const long interval = 5000;
+
+//Function prototype
 void sendToFirebase();
+void showNPK();
+void sensorpH();
+void sensorMoist();
+void maptegangan();
 
-// Generally, you should use "unsigned long" for variables that hold time
-// The value will quickly become too large for an int to store
-unsigned long previousMillis = 0; // will store last time LED was updated
-
-// constants won't change:
-const long interval = 5000; // interval at which to blink (milliseconds)
+uint32_t previousMillis = 0;
 
 bool ShowNPKorPH;
 
-// FirebaseData firebaseData;
-// FirebaseJson json;
-// FirebaseData fbdo;
-
 /* 3. Define the Firebase Data object */
 FirebaseData fbdo;
-
 /* 4, Define the FirebaseAuth data for authentication data */
 FirebaseAuth auth;
-
 /* Define the FirebaseConfig data for config data */
 FirebaseConfig config;
 
+HardwareSerial GPSSerial(2); // Use Serial2 for ESP32 (GPIO16 - RX2, GPIO17 - TX2)
 Adafruit_GPS GPS(&GPSSerial);
 float latitude;
 float llongitude;
 int satellites;
 
+
 Adafruit_SSD1306 display(128, 64, &Wire, 4);
 
-// library oled
-
-#define NPKa 35
 int val, Nx, Px, Kx, vaql0, vaql1, vaql2, vaql3, an0, an1, an2, an3;
 
 String dataSend = "";
@@ -115,7 +106,8 @@ void setup()
   //  timeClient.setTimeOffset(25200);
 }
 
-void maptegangan() {
+void maptegangan()
+{
 
   an1 = analogRead(NPKa);
   int anx1 = map(an1, 0, 4095, 0, 1023);
@@ -123,11 +115,14 @@ void maptegangan() {
   Serial.print("AnalogA0 = ");
   Serial.println(anx1);
   Serial.print(" ");
-  if (Nx < 0) {
+  if (Nx < 0)
+  {
     Nx = 0;
-  } else if (Nx > 900)
+  }
+  else if (Nx > 900)
     Nx = 900;
-  else {
+  else
+  {
     Nx = Nx;
   }
   String message11 = "N : " + (String)Nx + " PPM  ";
@@ -150,7 +145,6 @@ void maptegangan() {
   //  Px = Px;
   //  }
 
-
   an2 = analogRead(NPKa);
   //  vaql2 = map(an2, 0, 1023, 0, 1023);
   int anx2 = map(an2, 0, 4095, 0, 1023);
@@ -159,11 +153,14 @@ void maptegangan() {
   Serial.print("AnalogA0 = ");
   Serial.println(anx2);
   Serial.print(" ");
-  if (Px < 0) {
+  if (Px < 0)
+  {
     Px = 0;
-  } else if (Px > 100)
+  }
+  else if (Px > 100)
     Px = 100;
-  else {
+  else
+  {
     Px = Px;
   }
   String message21 = "P : " + (String)Px + " PPM ";
@@ -178,18 +175,22 @@ void maptegangan() {
   Serial.print("AnalogA0 = ");
   Serial.println(an3);
   Serial.print(" ");
-  if (Kx < 0) {
+  if (Kx < 0)
+  {
     Kx = 0;
-  } else if (Kx > 700)
+  }
+  else if (Kx > 700)
     Kx = 700;
-  else {
+  else
+  {
     Kx = Kx;
   }
   String message31 = "K : " + (String)Kx + " PPM ";
   String message3 = "    SOIL NPK     ";
 }
 
-void sensorMoist() {
+void sensorMoist()
+{
   //    float nilaiMo;
   int hasilPembacaan = analogRead(NPKa);
   int anxm = map(hasilPembacaan, 0, 4095, 0, 1023);
@@ -202,16 +203,20 @@ void sensorMoist() {
   delay(2000);
 }
 
-void sensorpH() {
+void sensorpH()
+{
   float anpH = analogRead(NPKa);
   int anxpH = map(anpH, 0, 4095, 0, 1023);
   float anpH1 = map(anxpH, 0, 950, 10, 35);
   nilaipH = (-0.0693 * anpH1) + 7.3855;
-  if (nilaipH < 1) {
+  if (nilaipH < 1)
+  {
     nilaipH = 1;
-  } else if (nilaipH > 14)
+  }
+  else if (nilaipH > 14)
     nilaipH = 14;
-  else {
+  else
+  {
     nilaipH = nilaipH;
   }
   Serial.print(" PH = ");
