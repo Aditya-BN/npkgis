@@ -20,6 +20,18 @@
 HardwareSerial GPSSerial(2);  // Use Serial2 for ESP32 (GPIO16 - RX2, GPIO17 - TX2)
 
 
+// constants won't change. Used here to set a pin number:
+const int ledPin = LED_BUILTIN;  // the number of the LED pin
+
+// Variables will change:
+int ledState = LOW;  // ledState used to set the LED
+
+// Generally, you should use "unsigned long" for variables that hold time
+// The value will quickly become too large for an int to store
+unsigned long previousMillis = 0;  // will store last time LED was updated
+
+// constants won't change:
+const long interval = 5000;  // interval at which to blink (milliseconds)
 
 // FirebaseData firebaseData;
 // FirebaseJson json;
@@ -99,13 +111,17 @@ void loop() {
     Serial.println(llongitude, 4);
     Serial.print("Satellites: ");
     Serial.println(satellites);
-
-    Firebase.pushFloat(fbdo, "/Alat_Ukur2/N", latitude);
-    Firebase.pushFloat(fbdo, "/Alat_Ukur2/P", llongitude);
-    //    Firebase.pushFloat(firebaseData, "/Alat_Ukur2/K", 1);
-    //    Firebase.pushFloat(firebaseData, "/Alat_Ukur2/PH", 1);
-    //    Firebase.pushFloat(firebaseData, "/Alat_Ukur2/Moist", 1);
   }
+
+unsigned long currentMillis = millis();
+
+  if (currentMillis - previousMillis >= interval) {
+    // save the last time you blinked the LED
+    previousMillis = currentMillis;
+
+    sendToFirebase();
+  }
+
   //        Firebase.pushString(firebaseData, "/Alat_Ukur2/Waktu", datehour);
   //        Firebase.pushFloat(firebaseData, "/Alat_Ukur2/N", latitude);
   //        Firebase.pushFloat(firebaseData, "/Alat_Ukur2/P", llongitude);
@@ -113,4 +129,13 @@ void loop() {
   //        Firebase.pushFloat(firebaseData, "/Alat_Ukur2/PH", 1);
   //        Firebase.pushFloat(firebaseData, "/Alat_Ukur2/Moist", 1);
   //  delay(900);
+}
+
+void sendToFirebase()
+{
+      Firebase.pushFloat(fbdo, "/Alat_Ukur2/N", latitude);
+    Firebase.pushFloat(fbdo, "/Alat_Ukur2/P", llongitude);
+    //    Firebase.pushFloat(firebaseData, "/Alat_Ukur2/K", 1);
+    //    Firebase.pushFloat(firebaseData, "/Alat_Ukur2/PH", 1);
+    //    Firebase.pushFloat(firebaseData, "/Alat_Ukur2/Moist", 1);
 }
