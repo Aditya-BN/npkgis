@@ -20,11 +20,7 @@
 HardwareSerial GPSSerial(2);  // Use Serial2 for ESP32 (GPIO16 - RX2, GPIO17 - TX2)
 
 
-// constants won't change. Used here to set a pin number:
-const int ledPin = LED_BUILTIN;  // the number of the LED pin
-
-// Variables will change:
-int ledState = LOW;  // ledState used to set the LED
+void sendToFirebase();
 
 // Generally, you should use "unsigned long" for variables that hold time
 // The value will quickly become too large for an int to store
