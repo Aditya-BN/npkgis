@@ -7,8 +7,8 @@
 #include <WiFiUdp.h>
 #include <FirebaseESP32.h>
 
-#define WIFI_SSID "0610"
-#define WIFI_PASSWORD "masuk123"
+#define WIFI_SSID "bye kuota"
+#define WIFI_PASSWORD "1234567890"
 
 #define DATABASE_URL "https://agrisoil-dev-default-rtdb.asia-southeast1.firebasedatabase.app/"
 #define DATABASE_SECRET "zJRSwvyUtt8xYDklM4mBm3pBbPLZXp2YsVj4KMbC"
