@@ -118,23 +118,23 @@ void firebaseSetup()
 
 void maptegangan()
 {
-
   an1 = analogRead(NPKa);
   int anx1 = map(an1, 0, 4095, 0, 1023);
   Nx = map(anx1, 0, 1023, 350, 60);
+
   Serial.print("AnalogA0 = ");
   Serial.println(anx1);
   Serial.print(" ");
+
   if (Nx < 0)
   {
     Nx = 0;
   }
   else if (Nx > 900)
-    Nx = 900;
-  else
   {
-    Nx = Nx;
+    Nx = 900;
   }
+
   String message11 = "N : " + (String)Nx + " PPM  ";
   String message1 = "    SOIL NPK     ";
   //==========
@@ -188,17 +188,16 @@ void maptegangan()
   Serial.print("AnalogA0 = ");
   Serial.println(an3);
   Serial.print(" ");
-  
+
   if (Kx < 0)
   {
     Kx = 0;
   }
   else if (Kx > 700)
-    Kx = 700;
-  else
   {
-    Kx = Kx;
+    Kx = 700;
   }
+
   String message31 = "K : " + (String)Kx + " PPM ";
   String message3 = "    SOIL NPK     ";
 }
@@ -222,17 +221,18 @@ void sensorpH()
   float anpH = analogRead(NPKa);
   int anxpH = map(anpH, 0, 4095, 0, 1023);
   float anpH1 = map(anxpH, 0, 950, 10, 35);
+
   nilaipH = (-0.0693 * anpH1) + 7.3855;
+
   if (nilaipH < 1)
   {
     nilaipH = 1;
   }
   else if (nilaipH > 14)
-    nilaipH = 14;
-  else
   {
-    nilaipH = nilaipH;
+    nilaipH = 14;
   }
+
   Serial.print(" PH = ");
   Serial.println(nilaipH);
   // delay(2000);
