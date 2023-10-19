@@ -240,6 +240,7 @@ void sensorpH()
 
 void sendToFirebase()
 {
+  Serial.println("Kirim ke FIREEEEbase");
   Firebase.setFloat(fbdo, "/Alat1/LAT", latitude);
   Firebase.setFloat(fbdo, "/Alat1/LONG", llongitude);
   Firebase.setFloat(fbdo, "/Alat1/N", Nx);
