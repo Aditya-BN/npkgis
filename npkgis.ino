@@ -1,3 +1,4 @@
+//=========================== LIBRARIES ===========================
 #include <Adafruit_GPS.h>
 #include <HardwareSerial.h>
 #include <Wire.h>
@@ -7,6 +8,7 @@
 #include <WiFiUdp.h>
 #include <FirebaseESP32.h>
 
+//=========================== DEFINE VALUE ===========================
 #define WIFI_SSID "bye kuota"
 #define WIFI_PASSWORD "1234567890"
 
@@ -16,18 +18,19 @@
 #define NPKa 35
 
 const long interval = 5000;
+uint32_t previousMillis = 0;
+bool ShowNPKorPH;
 
-//Function prototype
+//=========================== Function prototype ===========================
 void sendToFirebase();
 void showNPK();
 void sensorpH();
 void sensorMoist();
 void maptegangan();
+void firebaseSetup();
+void setupWifi();
 
-uint32_t previousMillis = 0;
-
-bool ShowNPKorPH;
-
+//=========================== FIREBASE ===========================
 /* 3. Define the Firebase Data object */
 FirebaseData fbdo;
 /* 4, Define the FirebaseAuth data for authentication data */
@@ -35,15 +38,18 @@ FirebaseAuth auth;
 /* Define the FirebaseConfig data for config data */
 FirebaseConfig config;
 
-HardwareSerial GPSSerial(2); // Use Serial2 for ESP32 (GPIO16 - RX2, GPIO17 - TX2)
+//=========================== GPS ===========================
+// Use Serial2 for ESP32 (GPIO16 - RX2, GPIO17 - TX2)
+HardwareSerial GPSSerial(2);
 Adafruit_GPS GPS(&GPSSerial);
 float latitude;
 float llongitude;
 int satellites;
 
-
+//=========================== OLED ===========================
 Adafruit_SSD1306 display(128, 64, &Wire, 4);
 
+//=========================== SENSOR ===========================
 int val, Nx, Px, Kx, vaql0, vaql1, vaql2, vaql3, an0, an1, an2, an3;
 
 String dataSend = "";
@@ -54,12 +60,7 @@ int nilaiP;
 int nilaiK;
 int nilaiMo;
 float nilaipH;
-// int an0 = A0;
-// int an1 = A1;
-// int an2 = A1;
 int pH = 35;
-// int moisture = A4;
-// int an5 = A5;
 String Ns, Ps, Ks, pHs, Moists;
 
 void setup()
@@ -72,23 +73,35 @@ void setup()
 
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
+  display.setTextColor(WHITE);
 
+  setupWifi();
+  firebaseSetup();
+
+  //  timeClient.begin();
+  //  timeClient.setTimeOffset(25200);
+}
+
+void setupWifi()
+{
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Connecting...");
+
   while (WiFi.status() != WL_CONNECTED)
   {
     Serial.print(".");
     delay(300);
   }
 
-  // pinMode(LED, OUTPUT);
   Serial.println(F("Starting"));
   Serial.println();
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
   Serial.println();
-  // Firebase.begin(FIREBASE_HOST, FIREBASE_Authorization_key);
+}
 
+void firebaseSetup()
+{
   /* Assign the database URL and database secret(required) */
   config.database_url = DATABASE_URL;
   config.signer.tokens.legacy_token = DATABASE_SECRET;
@@ -101,9 +114,6 @@ void setup()
 
   /* Initialize the library with the Firebase authen and config */
   Firebase.begin(&config, &auth);
-
-  //  timeClient.begin();
-  //  timeClient.setTimeOffset(25200);
 }
 
 void maptegangan()
@@ -150,9 +160,11 @@ void maptegangan()
   int anx2 = map(an2, 0, 4095, 0, 1023);
   Px = map(anx2, 100, 1023, 32, 5);
   //  Px= (Pxx/100);
+
   Serial.print("AnalogA0 = ");
   Serial.println(anx2);
   Serial.print(" ");
+
   if (Px < 0)
   {
     Px = 0;
@@ -172,9 +184,11 @@ void maptegangan()
   //  vaql3 = map(an3, 0, 1023, 0, 1023);
   int anx3 = map(an3, 0, 4095, 0, 1023);
   Kx = map(anx3, 30, 1023, 210, 70);
+
   Serial.print("AnalogA0 = ");
   Serial.println(an3);
   Serial.print(" ");
+  
   if (Kx < 0)
   {
     Kx = 0;
@@ -200,7 +214,7 @@ void sensorMoist()
   Serial.print("Persentase Kelembaban Tanah = ");
   Serial.print(nilaiMo);
   Serial.println("%");
-  delay(2000);
+  // delay(2000);
 }
 
 void sensorpH()
@@ -221,11 +235,85 @@ void sensorpH()
   }
   Serial.print(" PH = ");
   Serial.println(nilaipH);
-  delay(2000);
+  // delay(2000);
+}
+
+void sendToFirebase()
+{
+  Firebase.setFloat(fbdo, "/Alat1/LAT", latitude);
+  Firebase.setFloat(fbdo, "/Alat1/LONG", llongitude);
+  Firebase.setFloat(fbdo, "/Alat1/N", Nx);
+  Firebase.setFloat(fbdo, "/Alat1/P", Px);
+  Firebase.setFloat(fbdo, "/Alat1/K", Kx);
+  Firebase.setFloat(fbdo, "/Alat1/PH", nilaipH);
+  Firebase.setFloat(fbdo, "/Alat1/MOIST", nilaiMo);
+}
+
+void showNPK()
+{
+
+  display.clearDisplay();
+
+  Serial.print("gps---");
+
+  int anxx = analogRead(NPKa);
+  int anxxx = map(anxx, 0, 4095, 0, 1023);
+
+  if (anxxx < 1010)
+  {
+    maptegangan();
+    sensorpH();
+    sensorMoist();
+  }
+  else if (anxxx > 1010)
+  {
+    Nx = 0;
+    Px = 0;
+    Kx = 0;
+    nilaipH = 0;
+    nilaiMo = 0;
+  }
+
+  if (ShowNPKorPH)
+  {
+    Serial.print("something 1");
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setCursor(10, 0);
+    display.println("N");
+    display.setCursor(0, 18);
+    display.println(Nx);
+    display.setCursor(55, 0);
+    display.println("P");
+    display.setCursor(45, 18);
+    display.println(Px);
+    display.setCursor(100, 0);
+    display.println("k");
+    display.setCursor(90, 18);
+    display.println(Kx);
+    display.display();
+  }
+  else
+  {
+    Serial.print("something 2");
+    display.clearDisplay();
+    display.setCursor(10, 0);
+    display.println("pH");
+    display.setCursor(2, 18);
+    display.println(nilaipH);
+    display.setCursor(60, 0);
+    display.println("Moist");
+    display.setCursor(70, 18);
+    display.println(nilaiMo);
+    display.setCursor(99, 18);
+    display.println("%");
+    display.display();
+  }
 }
 
 void loop()
 {
+  // GPS
   char c = GPS.read();
   if (GPS.newNMEAreceived())
   {
@@ -267,77 +355,4 @@ void loop()
   //        Firebase.pushFloat(firebaseData, "/Alat_Ukur2/PH", 1);
   //        Firebase.pushFloat(firebaseData, "/Alat_Ukur2/Moist", 1);
   //  delay(900);
-}
-
-void sendToFirebase()
-{
-  Firebase.setFloat(fbdo, "/Alat1/LAT", latitude);
-  Firebase.setFloat(fbdo, "/Alat1/LONG", llongitude);
-  Firebase.setFloat(fbdo, "/Alat1/N", Nx);
-  Firebase.setFloat(fbdo, "/Alat1/P", Px);
-  Firebase.setFloat(fbdo, "/Alat1/K", Kx);
-  Firebase.setFloat(fbdo, "/Alat1/PH", nilaipH);
-  Firebase.setFloat(fbdo, "/Alat1/MOIST", nilaiMo);
-}
-
-void showNPK()
-{
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-  display.clearDisplay();
-
-  Serial.print("gps---");
-
-  int anxx = analogRead(NPKa);
-  int anxxx = map(anxx, 0, 4095, 0, 1023);
-  if (anxxx < 1010)
-  {
-    maptegangan();
-    sensorpH();
-    sensorMoist();
-  }
-  else if (anxxx > 1010)
-  {
-    Nx = 0;
-    Px = 0;
-    Kx = 0;
-    nilaipH = 0;
-    nilaiMo = 0;
-  }
-
-  if (ShowNPKorPH)
-  {
-    Serial.print("something 1");
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(WHITE);
-    display.setCursor(10, 0);
-    display.println("N");
-    display.setCursor(0, 18);
-    display.println(Nx);
-    display.setCursor(55, 0);
-    display.println("P");
-    display.setCursor(45, 18);
-    display.println(Px);
-    display.setCursor(100, 0);
-    display.println("k");
-    display.setCursor(90, 18);
-    display.println(Kx);
-    display.display();
-  }
-  else
-  {
-    Serial.print("something 2");
-    display.clearDisplay();
-    display.setCursor(10, 0);
-    display.println("pH");
-    display.setCursor(2, 18);
-    display.println(nilaipH);
-    display.setCursor(60, 0);
-    display.println("Moist");
-    display.setCursor(70, 18);
-    display.println(nilaiMo);
-    display.setCursor(99, 18);
-    display.println("%");
-    display.display();
-  }
 }
