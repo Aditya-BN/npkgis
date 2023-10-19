@@ -277,7 +277,7 @@ void showNPK()
 
   if (ShowNPKorPH)
   {
-    Serial.print("something 1");
+    Serial.println("something 1");
     display.clearDisplay();
     display.setTextSize(2);
     display.setCursor(10, 0);
@@ -296,7 +296,7 @@ void showNPK()
   }
   else
   {
-    Serial.print("something 2");
+    Serial.println("something 2");
     display.clearDisplay();
     display.setCursor(10, 0);
     display.println("pH");
@@ -310,6 +310,7 @@ void showNPK()
     display.println("%");
     display.display();
   }
+  ShowNPKorPH = !ShowNPKorPH;
 }
 
 void loop()
