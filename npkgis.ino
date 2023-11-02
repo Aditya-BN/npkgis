@@ -4,13 +4,13 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-// #include <NTPClient.h>
+#include <NTPClient.h>
 #include <WiFi.h>
 #include <FirebaseESP32.h>
 
-//http
+// http
 #include <HTTPClient.h>
-String URL ="https://sistempemetaan2023.com/dashboard/saveData";
+String URL = "https://sistempemetaan2023.com/dashboard/saveData";
 
 //=========================== DEFINE VALUE ===========================
 #define WIFI_SSID "Turuu"
@@ -42,6 +42,16 @@ FirebaseData fbdo;
 FirebaseAuth auth;
 /* Define the FirebaseConfig data for config data */
 FirebaseConfig config;
+
+//=========================== NTP ===========================
+// Define NTP Client to get time
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP);
+
+// Variables to save date and time
+String formattedDate;
+String dayStamp;
+String timeStamp, datehour;
 
 //=========================== GPS ===========================
 // Use Serial2 for ESP32 (GPIO16 - RX2, GPIO17 - TX2)
@@ -219,7 +229,7 @@ void sensorMoist()
   Serial.print("Persentase Kelembaban Tanah = ");
   Serial.print(nilaiMo);
   Serial.println("%");
-  
+
   // delay(2000);
 }
 
@@ -242,7 +252,7 @@ void sensorpH()
 
   Serial.print(" PH = ");
   Serial.println(nilaipH);
-  
+
   // delay(2000);
 }
 
@@ -256,15 +266,26 @@ void sendToFirebase()
   Firebase.setFloat(fbdo, "/Alat3_rt/K", Kx);
   Firebase.setFloat(fbdo, "/Alat3_rt/PH", nilaipH);
   Firebase.setFloat(fbdo, "/Alat3_rt/MOIST", nilaiMo);
+  Firebase.setFloat(fbdo, "/Alat3_rt/waktu", datehour);
 
- Serial.println("Kirim ke FIREEEEbase");
-  Firebase.pushFloat(fbdo, "/Alat3/LAT", latitude);
-  Firebase.pushFloat(fbdo, "/Alat3/LONG", llongitude);
-  Firebase.pushFloat(fbdo, "/Alat3/N", Nx);
-  Firebase.pushFloat(fbdo, "/Alat3/P", Px);
-  Firebase.pushFloat(fbdo, "/Alat3/K", Kx);
-  Firebase.pushFloat(fbdo, "/Alat3/PH", nilaipH);
-  Firebase.pushFloat(fbdo, "/Alat3/MOIST", nilaiMo);
+  String lats, llongs, Ns, Ps, Ks, pHs, Moists;
+  lats = String(latitude);
+  llongs = String(llongitude)
+  Ns = String(Nx);
+  Ps = String(Px);
+  Ks = String(Kx);
+  pHs = String(nilaipH);
+  Moists = String(nilaiMo);
+
+  json.set("/waktu", datehour);
+  json.set("/LAT", lats);
+  json.set("/LONG", llongs);
+  json.set("/n", Ns);
+  json.set("/p", Ps);
+  json.set("/k", Ks);
+  json.set("/ph", pHs);
+  json.set("/moisture", Moists);
+  Firebase.pushJSON(fbdo, "/Alat3", json);
 }
 
 void showNPK()
@@ -328,13 +349,34 @@ void showNPK()
     display.display();
   }
   ShowNPKorPH = !ShowNPKorPH;
-  
+}
+
+void NTPTimestamp()
+{
+  while (!timeClient.update())
+  {
+    timeClient.forceUpdate();
+  }
+  formattedDate = timeClient.getFormattedDate();
+  Serial.println(formattedDate);
+
+  // Extract date
+  int splitT = formattedDate.indexOf("T");
+  dayStamp = formattedDate.substring(0, splitT);
+  Serial.print("DATE: ");
+  Serial.println(dayStamp);
+  // Extract time
+  timeStamp = formattedDate.substring(splitT + 1, formattedDate.length() - 1);
+  Serial.print("HOUR: ");
+  Serial.println(timeStamp);
+
+  datehour = (dayStamp) + " " + (timeStamp);
+  Serial.print("DATTE HOUR: ");
+  Serial.println(datehour);
 }
 
 void loop()
 {
-  konekMyAdmin();
-  
   // GPS
   char c = GPS.read();
   if (GPS.newNMEAreceived())
@@ -365,41 +407,54 @@ void loop()
   {
     // save the last time you blinked the LED
     previousMillis = currentMillis;
-    Serial.println("kirim db");
+    Serial.println("Tampilkan nilai dan kirim db");
     showNPK();
     sendToFirebase();
+    konekMyAdmin();
   }
 }
-  void konekMyAdmin(){
-  //sent to myAdmin
+
+void konekMyAdmin()
+{
+  // sent to myAdmin
   postData = "kelembaban=" + String(nilaiMo) + "&ph=" + String(nilaipH) + "&nilai_n=" + String(Nx) + "&nilai_p=" + String(Px) + "&nilai_k=" + String(Kx) + "&latitude=" + String(latitude) + "&longitude=" + String(llongitude);
-  
-  //KONEK HTTP
+
+  // KONEK HTTP
   HTTPClient http;
   http.begin(URL);
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-  
-   httpCode = http.POST(postData);
+
+  httpCode = http.POST(postData);
   payload = "";
 
-  if(httpCode > 0) {
+  if (httpCode > 0)
+  {
     // file found at server
-    if(httpCode == HTTP_CODE_OK) {
+    if (httpCode == HTTP_CODE_OK)
+    {
       payload = http.getString();
       Serial.println(payload);
-    } else {
+    }
+    else
+    {
       // HTTP header has been send and Server response header has been handled
       Serial.printf("[HTTP] GET... code: %d\n", httpCode);
     }
-  } else {
+  }
+  else
+  {
     Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
   }
-  delay(800);
-  
-  http.end();  //Close connection
- 
-  Serial.print("URL : ");  Serial.println(URL);
-  Serial.print("Data: "); Serial.println(postData);
-  Serial.print("httpCode: "); Serial.println(httpCode);
-  Serial.print("payload: "); Serial.println(payload);
+  // delay(800);
+
+  http.end(); // Close connection
+
+  Serial.print("URL : ");
+  Serial.println(URL);
+  Serial.print("Data: ");
+  Serial.println(postData);
+  Serial.print("httpCode: ");
+  Serial.println(httpCode);
+  Serial.print("payload: ");
+  Serial.println(payload);
 }
