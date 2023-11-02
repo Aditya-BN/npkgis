@@ -5,12 +5,16 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 // #include <NTPClient.h>
-#include <WiFiUdp.h>
+#include <WiFi.h>
 #include <FirebaseESP32.h>
 
+//http
+#include <HTTPClient.h>
+String URL ="https://sistempemetaan2023.com/dashboard/saveData";
+
 //=========================== DEFINE VALUE ===========================
-#define WIFI_SSID "bye kuota"
-#define WIFI_PASSWORD "1234567890"
+#define WIFI_SSID "Turuu"
+#define WIFI_PASSWORD "turu12345"
 
 #define DATABASE_URL "https://agrisoil-dev-default-rtdb.asia-southeast1.firebasedatabase.app/"
 #define DATABASE_SECRET "zJRSwvyUtt8xYDklM4mBm3pBbPLZXp2YsVj4KMbC"
@@ -29,6 +33,7 @@ void sensorMoist();
 void maptegangan();
 void firebaseSetup();
 void setupWifi();
+void konekMyAdmin();
 
 //=========================== FIREBASE ===========================
 /* 3. Define the Firebase Data object */
@@ -47,7 +52,7 @@ float llongitude;
 int satellites;
 
 //=========================== OLED ===========================
-Adafruit_SSD1306 display(128, 64, &Wire, 4);
+Adafruit_SSD1306 display(128, 32, &Wire, 4);
 
 //=========================== SENSOR ===========================
 int val, Nx, Px, Kx, vaql0, vaql1, vaql2, vaql3, an0, an1, an2, an3;
@@ -61,7 +66,8 @@ int nilaiK;
 int nilaiMo;
 float nilaipH;
 int pH = 35;
-String Ns, Ps, Ks, pHs, Moists;
+String Ns, Ps, Ks, pHs, Moists, postData, payload;
+int httpCode;
 
 void setup()
 {
@@ -213,6 +219,7 @@ void sensorMoist()
   Serial.print("Persentase Kelembaban Tanah = ");
   Serial.print(nilaiMo);
   Serial.println("%");
+  
   // delay(2000);
 }
 
@@ -235,19 +242,29 @@ void sensorpH()
 
   Serial.print(" PH = ");
   Serial.println(nilaipH);
+  
   // delay(2000);
 }
 
 void sendToFirebase()
 {
   Serial.println("Kirim ke FIREEEEbase");
-  Firebase.setFloat(fbdo, "/Alat1/LAT", latitude);
-  Firebase.setFloat(fbdo, "/Alat1/LONG", llongitude);
-  Firebase.setFloat(fbdo, "/Alat1/N", Nx);
-  Firebase.setFloat(fbdo, "/Alat1/P", Px);
-  Firebase.setFloat(fbdo, "/Alat1/K", Kx);
-  Firebase.setFloat(fbdo, "/Alat1/PH", nilaipH);
-  Firebase.setFloat(fbdo, "/Alat1/MOIST", nilaiMo);
+  Firebase.setFloat(fbdo, "/Alat3_rt/LAT", latitude);
+  Firebase.setFloat(fbdo, "/Alat3_rt/LONG", llongitude);
+  Firebase.setFloat(fbdo, "/Alat3_rt/N", Nx);
+  Firebase.setFloat(fbdo, "/Alat3_rt/P", Px);
+  Firebase.setFloat(fbdo, "/Alat3_rt/K", Kx);
+  Firebase.setFloat(fbdo, "/Alat3_rt/PH", nilaipH);
+  Firebase.setFloat(fbdo, "/Alat3_rt/MOIST", nilaiMo);
+
+ Serial.println("Kirim ke FIREEEEbase");
+  Firebase.pushFloat(fbdo, "/Alat3/LAT", latitude);
+  Firebase.pushFloat(fbdo, "/Alat3/LONG", llongitude);
+  Firebase.pushFloat(fbdo, "/Alat3/N", Nx);
+  Firebase.pushFloat(fbdo, "/Alat3/P", Px);
+  Firebase.pushFloat(fbdo, "/Alat3/K", Kx);
+  Firebase.pushFloat(fbdo, "/Alat3/PH", nilaipH);
+  Firebase.pushFloat(fbdo, "/Alat3/MOIST", nilaiMo);
 }
 
 void showNPK()
@@ -311,10 +328,13 @@ void showNPK()
     display.display();
   }
   ShowNPKorPH = !ShowNPKorPH;
+  
 }
 
 void loop()
 {
+  konekMyAdmin();
+  
   // GPS
   char c = GPS.read();
   if (GPS.newNMEAreceived())
@@ -349,12 +369,37 @@ void loop()
     showNPK();
     sendToFirebase();
   }
+}
+  void konekMyAdmin(){
+  //sent to myAdmin
+  postData = "kelembaban=" + String(nilaiMo) + "&ph=" + String(nilaipH) + "&nilai_n=" + String(Nx) + "&nilai_p=" + String(Px) + "&nilai_k=" + String(Kx) + "&latitude=" + String(latitude) + "&longitude=" + String(llongitude);
+  
+  //KONEK HTTP
+  HTTPClient http;
+  http.begin(URL);
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  
+   httpCode = http.POST(postData);
+  payload = "";
 
-  //        Firebase.pushString(firebaseData, "/Alat_Ukur2/Waktu", datehour);
-  //        Firebase.pushFloat(firebaseData, "/Alat_Ukur2/N", latitude);
-  //        Firebase.pushFloat(firebaseData, "/Alat_Ukur2/P", llongitude);
-  //        Firebase.pushFloat(firebaseData, "/Alat_Ukur2/K", 1);
-  //        Firebase.pushFloat(firebaseData, "/Alat_Ukur2/PH", 1);
-  //        Firebase.pushFloat(firebaseData, "/Alat_Ukur2/Moist", 1);
-  //  delay(900);
+  if(httpCode > 0) {
+    // file found at server
+    if(httpCode == HTTP_CODE_OK) {
+      payload = http.getString();
+      Serial.println(payload);
+    } else {
+      // HTTP header has been send and Server response header has been handled
+      Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+    }
+  } else {
+    Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+  }
+  delay(800);
+  
+  http.end();  //Close connection
+ 
+  Serial.print("URL : ");  Serial.println(URL);
+  Serial.print("Data: "); Serial.println(postData);
+  Serial.print("httpCode: "); Serial.println(httpCode);
+  Serial.print("payload: "); Serial.println(payload);
 }
